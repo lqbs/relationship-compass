@@ -1,0 +1,32 @@
+{
+  "name": "relationship-compass",
+  "private": true,
+  "version": "0.1.0",
+  "description": "本地优先的个人 CRM:打开就知道这周该主动联系谁",
+  "type": "module",
+  "scripts": {
+    "start": "pnpm run build && node src/server/main.ts",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "dev:server": "node --watch src/server/main.ts",
+    "dev:web": "vite",
+    "notify": "node src/server/notify.ts",
+    "notify:install": "node src/server/notify-install.ts install",
+    "notify:uninstall": "node src/server/notify-install.ts uninstall"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
+  }
+}
