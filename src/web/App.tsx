@@ -1,30 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { WeeklyList } from '../domain/judgment.ts';
-import { fetchWeeklyList, recordInteraction } from './api.ts';
 import { ListPage } from './ListPage.tsx';
+import { ContactsPage } from './ContactsPage.tsx';
+import { ContactDetailPage } from './ContactDetailPage.tsx';
+import { useRoute } from './router.ts';
 
 export function App() {
-  const [list, setList] = useState<WeeklyList | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const route = useRoute();
   const [toast, setToast] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setList(await fetchWeeklyList());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
 
   useEffect(() => {
     if (toast === null) return;
@@ -32,14 +15,7 @@ export function App() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  const handleRecord = useCallback(
-    async (contactId: string, note: string) => {
-      await recordInteraction(contactId, { note });
-      setToast('已记录 · 清单已更新');
-      await reload();
-    },
-    [reload],
-  );
+  const showToast = useCallback((message: string) => setToast(message), []);
 
   return (
     <div className="app">
@@ -48,20 +24,20 @@ export function App() {
           <span className="logo-dot" />
           Relationship Compass
         </div>
-        {list && <span className="topbar-date">{list.today}</span>}
+        <nav className="tabs">
+          <a className={route.name === 'list' ? 'tab tab-active' : 'tab'} href="#/">
+            本周清单
+          </a>
+          <a className={route.name === 'list' ? 'tab' : 'tab tab-active'} href="#/contacts">
+            联系人
+          </a>
+        </nav>
       </header>
 
       <main className="content">
-        {loading && !list && <p className="hint">正在加载…</p>}
-        {error && (
-          <div className="error-banner">
-            {error}
-            <button type="button" className="link-button" onClick={() => void reload()}>
-              重试
-            </button>
-          </div>
-        )}
-        {list && <ListPage list={list} onRecord={handleRecord} />}
+        {route.name === 'list' && <ListPage onToast={showToast} />}
+        {route.name === 'contacts' && <ContactsPage onToast={showToast} />}
+        {route.name === 'contact' && <ContactDetailPage id={route.id} onToast={showToast} />}
       </main>
 
       {toast !== null && (

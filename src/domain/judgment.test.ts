@@ -173,6 +173,11 @@ describe('describeReason 生成上榜依据文案', () => {
     const result = evaluateContact(makeContact('a', { deferredUntil: '2026-10-01' }), [], TODAY);
     expect(describeReason(result)).toBe('延后中 · 2026-10-01 回归');
   });
+
+  it('今天联系过(0 天前)读作「今天联系过」', () => {
+    const result = evaluateContact(makeContact('a', { cadenceKey: '1m' }), [makeInteraction('a', TODAY)], TODAY);
+    expect(describeReason(result)).toBe('今天联系过 · 希望每 1 个月');
+  });
 });
 
 describe('日期工具在判定中的边界', () => {

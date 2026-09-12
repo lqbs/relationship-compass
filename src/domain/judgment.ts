@@ -96,6 +96,10 @@ export function buildWeeklyList(contacts: Contact[], interactions: Interaction[]
   return { today, overdue, never, dueSoon, listCount: overdue.length + never.length + dueSoon.length };
 }
 
+function contactRecencyText(daysSinceContact: number | null): string {
+  return daysSinceContact === 0 ? '今天联系过' : `${daysSinceContact} 天前联系过`;
+}
+
 /** 生成清单里"上榜依据"的展示文案。 */
 export function describeReason(evaluation: ContactEvaluation): string {
   const cadence = CADENCE_PRESETS[evaluation.contact.cadenceKey];
@@ -105,10 +109,10 @@ export function describeReason(evaluation: ContactEvaluation): string {
     case 'never':
       return `还没联系过 · 希望每 ${cadence.label}`;
     case 'dueSoon':
-      return `${evaluation.daysSinceContact} 天前联系过 · 还有 ${evaluation.daysUntilDue} 天到期`;
+      return `${contactRecencyText(evaluation.daysSinceContact)} · 还有 ${evaluation.daysUntilDue} 天到期`;
     case 'deferred':
       return `延后中 · ${evaluation.contact.deferredUntil} 回归`;
     case 'notDue':
-      return `${evaluation.daysSinceContact} 天前联系过 · 希望每 ${cadence.label}`;
+      return `${contactRecencyText(evaluation.daysSinceContact)} · 希望每 ${cadence.label}`;
   }
 }
