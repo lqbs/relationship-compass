@@ -58,6 +58,21 @@ describe('SQLite 存储层', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it('可修正互动的日期与备注', () => {
+    const { dir, file } = tempDbFile();
+    const store = openStore(file);
+    const contact = store.createContact({ name: '赵六' });
+    const created = store.addInteraction(contact.id, { date: '2026-09-01', note: '笔误' });
+    if (created === null) throw new Error('创建互动失败');
+
+    const updated = store.updateInteraction(created.id, { date: '2026-09-02', note: '改正后' });
+    expect(updated?.date).toBe('2026-09-02');
+    expect(updated?.note).toBe('改正后');
+    expect(store.updateInteraction('不存在', { note: 'x' })).toBeNull();
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it('清空示例数据只删示例联系人及其互动', () => {
     const { dir, file } = tempDbFile();
     const store = openStore(file);

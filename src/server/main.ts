@@ -32,6 +32,15 @@ const MIME_TYPES: Record<string, string> = {
   '.txt': 'text/plain; charset=utf-8',
 };
 
+class HttpError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
 function sendJson(res: ServerResponse, status: number, payload: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(payload));
@@ -43,11 +52,15 @@ async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknow
   for await (const chunk of req) {
     const buffer = chunk as Buffer;
     size += buffer.length;
-    if (size > 1_000_000) throw new Error('请求体过大');
+    if (size > 1_000_000) throw new HttpError(413, '请求体过大');
     chunks.push(buffer);
   }
   if (size === 0) return {};
-  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
+  } catch {
+    throw new HttpError(400, '请求体不是合法 JSON');
+  }
 }
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -190,15 +203,45 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
   }
 
   const interactionMatch = path.match(/^\/api\/interactions\/([^/]+)$/);
-  if (interactionMatch && method === 'DELETE') {
-    const removed = store.deleteInteraction(decodeURIComponent(interactionMatch[1] ?? ''));
-    if (!removed) {
-      sendJson(res, 404, { error: '互动不存在' });
+  if (interactionMatch) {
+    const interactionId = decodeURIComponent(interactionMatch[1] ?? '');
+
+    if (method === 'PATCH') {
+      const body = await readJsonBody(req);
+      const patch: { date?: string; note?: string } = {};
+      if (body.date !== undefined) {
+        if (!isDateString(body.date)) {
+          sendJson(res, 400, { error: '日期格式应为 YYYY-MM-DD' });
+          return;
+        }
+        patch.date = body.date;
+      }
+      if (body.note !== undefined) {
+        if (typeof body.note !== 'string') {
+          sendJson(res, 400, { error: '备注必须是文本' });
+          return;
+        }
+        patch.note = body.note;
+      }
+      const updated = store.updateInteraction(interactionId, patch);
+      if (!updated) {
+        sendJson(res, 404, { error: '互动不存在' });
+        return;
+      }
+      sendJson(res, 200, updated);
       return;
     }
-    res.writeHead(204);
-    res.end();
-    return;
+
+    if (method === 'DELETE') {
+      const removed = store.deleteInteraction(interactionId);
+      if (!removed) {
+        sendJson(res, 404, { error: '互动不存在' });
+        return;
+      }
+      res.writeHead(204);
+      res.end();
+      return;
+    }
   }
 
   if (path === '/api/sample/clear' && method === 'POST') {
@@ -247,6 +290,14 @@ const server = createServer((req, res) => {
         await serveStatic(res, url.pathname);
       }
     } catch (error) {
+      if (error instanceof HttpError) {
+        if (!res.headersSent) {
+          sendJson(res, error.status, { error: error.message });
+        } else {
+          res.end();
+        }
+        return;
+      }
       console.error('[relationship-compass] 请求处理失败:', error);
       if (res.headersSent) {
         res.end();

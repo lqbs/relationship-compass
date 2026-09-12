@@ -37,7 +37,7 @@ export function App() {
       <main className="content">
         {route.name === 'list' && <ListPage onToast={showToast} />}
         {route.name === 'contacts' && <ContactsPage onToast={showToast} />}
-        {route.name === 'contact' && <ContactDetailPage id={route.id} onToast={showToast} />}
+        {route.name === 'contact' && <ContactDetailPage key={route.id} id={route.id} onToast={showToast} />}
       </main>
 
       {toast !== null && (

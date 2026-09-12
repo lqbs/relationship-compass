@@ -70,6 +70,14 @@ export function deleteInteraction(id: string): Promise<void> {
   return request<void>(`/api/interactions/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
+export function updateInteraction(id: string, patch: { date?: string; note?: string }): Promise<Interaction> {
+  return request<Interaction>(`/api/interactions/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(patch),
+  });
+}
+
 export function clearSampleData(): Promise<{ removed: number }> {
   return request<{ removed: number }>('/api/sample/clear', { method: 'POST' });
 }

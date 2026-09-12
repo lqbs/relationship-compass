@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { addDays } from '../domain/dates.ts';
 import { describeReason, type ContactEvaluation } from '../domain/judgment.ts';
 import { CADENCE_KEYS, CADENCE_PRESETS, type CadenceKey, type Interaction } from '../domain/types.ts';
-import { deleteContact, deleteInteraction, fetchContact, recordInteraction, updateContact } from './api.ts';
+import { deleteContact, deleteInteraction, fetchContact, recordInteraction, updateContact, updateInteraction } from './api.ts';
 import { Avatar, StatusBadge } from './components.tsx';
 import { navigate } from './router.ts';
 
@@ -27,6 +27,12 @@ export function ContactDetailPage({ id, onToast }: { id: string; onToast: Notify
   const [deferDate, setDeferDate] = useState('');
   const [savingDefer, setSavingDefer] = useState(false);
 
+  const [today, setToday] = useState('');
+  const [editingInteractionId, setEditingInteractionId] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState('');
+  const [editNote, setEditNote] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [confirmingContact, setConfirmingContact] = useState(false);
 
@@ -40,6 +46,7 @@ export function ContactDetailPage({ id, onToast }: { id: string; onToast: Notify
       setName(data.evaluation.contact.name);
       setNote(data.evaluation.contact.note);
       setNewDate(data.today);
+      setToday(data.today);
       setDeferDate(addDays(data.today, 7));
       setDirty(false);
     } catch (err) {
@@ -119,6 +126,28 @@ export function ContactDetailPage({ id, onToast }: { id: string; onToast: Notify
       onToast(err instanceof Error ? err.message : '操作失败');
     } finally {
       setSavingDefer(false);
+    }
+  };
+
+  const startEditInteraction = (interaction: Interaction): void => {
+    setConfirmingDelete(null);
+    setEditingInteractionId(interaction.id);
+    setEditDate(interaction.date);
+    setEditNote(interaction.note);
+  };
+
+  const saveInteraction = async (): Promise<void> => {
+    if (editingInteractionId === null) return;
+    setSavingEdit(true);
+    try {
+      await updateInteraction(editingInteractionId, { date: editDate, note: editNote.trim() });
+      setEditingInteractionId(null);
+      onToast('已修正该条记录');
+      await load();
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : '修正失败');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -248,7 +277,7 @@ export function ContactDetailPage({ id, onToast }: { id: string; onToast: Notify
       <section className="card">
         <h2 className="card-title">记录一次来往</h2>
         <div className="record-inline">
-          <input type="date" value={newDate} onChange={(event) => setNewDate(event.target.value)} />
+          <input type="date" value={newDate} max={today} onChange={(event) => setNewDate(event.target.value)} />
           <input
             value={newNote}
             onChange={(event) => setNewNote(event.target.value)}
@@ -271,28 +300,69 @@ export function ContactDetailPage({ id, onToast }: { id: string; onToast: Notify
             {interactions.map((interaction) => (
               <li key={interaction.id} className="timeline-item">
                 <span className="timeline-date">{interaction.date}</span>
-                <span className="timeline-note">{interaction.note === '' ? '—' : interaction.note}</span>
-                {confirmingDelete === interaction.id ? (
-                  <span className="timeline-actions">
-                    <button
-                      type="button"
-                      className="link-button danger"
-                      onClick={() => void removeInteraction(interaction.id)}
-                    >
-                      确认删除
-                    </button>
-                    <button type="button" className="link-button" onClick={() => setConfirmingDelete(null)}>
-                      取消
-                    </button>
-                  </span>
+                {editingInteractionId === interaction.id ? (
+                  <>
+                    <input
+                      type="date"
+                      value={editDate}
+                      max={today}
+                      onChange={(event) => setEditDate(event.target.value)}
+                    />
+                    <input
+                      value={editNote}
+                      onChange={(event) => setEditNote(event.target.value)}
+                      placeholder="一句话(可留空)"
+                      maxLength={200}
+                    />
+                    <span className="timeline-actions">
+                      <button
+                        type="button"
+                        className="link-button"
+                        disabled={savingEdit}
+                        onClick={() => void saveInteraction()}
+                      >
+                        保存
+                      </button>
+                      <button type="button" className="link-button" onClick={() => setEditingInteractionId(null)}>
+                        取消
+                      </button>
+                    </span>
+                  </>
                 ) : (
-                  <button
-                    type="button"
-                    className="link-button timeline-delete"
-                    onClick={() => setConfirmingDelete(interaction.id)}
-                  >
-                    删除
-                  </button>
+                  <>
+                    <span className="timeline-note">{interaction.note === '' ? '—' : interaction.note}</span>
+                    {confirmingDelete === interaction.id ? (
+                      <span className="timeline-actions">
+                        <button
+                          type="button"
+                          className="link-button danger"
+                          onClick={() => void removeInteraction(interaction.id)}
+                        >
+                          确认删除
+                        </button>
+                        <button type="button" className="link-button" onClick={() => setConfirmingDelete(null)}>
+                          取消
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="timeline-actions">
+                        <button
+                          type="button"
+                          className="link-button timeline-hover-action"
+                          onClick={() => startEditInteraction(interaction)}
+                        >
+                          修正
+                        </button>
+                        <button
+                          type="button"
+                          className="link-button timeline-hover-action"
+                          onClick={() => setConfirmingDelete(interaction.id)}
+                        >
+                          删除
+                        </button>
+                      </span>
+                    )}
+                  </>
                 )}
               </li>
             ))}

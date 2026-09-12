@@ -54,6 +54,7 @@ export interface Store {
 
   listInteractions(contactId?: string): Interaction[];
   addInteraction(contactId: string, input: CreateInteractionInput): Interaction | null;
+  updateInteraction(id: string, patch: { date?: string; note?: string }): Interaction | null;
   deleteInteraction(id: string): boolean;
 
   clearSampleData(): number;
@@ -214,6 +215,19 @@ export function openStore(filePath: string): Store {
       };
       insertInteraction.run(interaction.id, interaction.contactId, interaction.date, interaction.note, interaction.createdAt);
       return interaction;
+    },
+
+    updateInteraction(id, patch) {
+      const row = db.prepare('SELECT * FROM interactions WHERE id = ?').get(id) as unknown as InteractionRow | undefined;
+      if (!row) return null;
+      const current = toInteraction(row);
+      const next: Interaction = {
+        ...current,
+        date: patch.date ?? current.date,
+        note: patch.note ?? current.note,
+      };
+      db.prepare('UPDATE interactions SET date = ?, note = ? WHERE id = ?').run(next.date, next.note, id);
+      return next;
     },
 
     deleteInteraction(id) {
