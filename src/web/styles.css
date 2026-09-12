@@ -131,15 +131,15 @@ body {
   overflow: hidden;
 }
 
+.row-wrap + .row-wrap {
+  border-top: 1px solid var(--border);
+}
+
 .row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 13px 16px;
-}
-
-.row + .row {
-  border-top: 1px solid var(--border);
 }
 
 .avatar {
@@ -229,4 +229,107 @@ body {
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
+}
+
+.btn-record {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(79, 70, 229, 0.35);
+  background: rgba(79, 70, 229, 0.08);
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-record:hover {
+  background: rgba(79, 70, 229, 0.16);
+}
+
+.record-form {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 13px 66px;
+}
+
+.record-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 14px;
+  background: #fbfbfc;
+}
+
+.record-form input:focus {
+  outline: 2px solid rgba(79, 70, 229, 0.35);
+  outline-offset: 1px;
+  background: #ffffff;
+}
+
+.btn-primary {
+  flex: none;
+  padding: 7px 14px;
+  border-radius: 9px;
+  border: none;
+  background: var(--accent);
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-ghost {
+  flex: none;
+  padding: 7px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.list-note {
+  margin: 18px 2px 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.25);
+  animation: toast-in 0.18s ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }

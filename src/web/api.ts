@@ -1,4 +1,5 @@
 import type { WeeklyList } from '../domain/judgment.ts';
+import type { Interaction } from '../domain/types.ts';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, init);
@@ -17,4 +18,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function fetchWeeklyList(): Promise<WeeklyList> {
   return request<WeeklyList>('/api/list');
+}
+
+export function recordInteraction(contactId: string, input: { date?: string; note?: string } = {}): Promise<Interaction> {
+  return request<Interaction>(`/api/contacts/${encodeURIComponent(contactId)}/interactions`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  });
 }
