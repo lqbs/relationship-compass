@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { addDays } from '../domain/dates.ts';
 import { describeReason, type ContactEvaluation } from '../domain/judgment.ts';
 import { CADENCE_KEYS, CADENCE_PRESETS, type CadenceKey, type Interaction } from '../domain/types.ts';
 import { deleteContact, deleteInteraction, fetchContact, recordInteraction, updateContact } from './api.ts';
@@ -23,6 +24,9 @@ export function ContactDetailPage({ id, onToast }: { id: string; onToast: Notify
   const [newNote, setNewNote] = useState('');
   const [recording, setRecording] = useState(false);
 
+  const [deferDate, setDeferDate] = useState('');
+  const [savingDefer, setSavingDefer] = useState(false);
+
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [confirmingContact, setConfirmingContact] = useState(false);
 
@@ -36,6 +40,7 @@ export function ContactDetailPage({ id, onToast }: { id: string; onToast: Notify
       setName(data.evaluation.contact.name);
       setNote(data.evaluation.contact.note);
       setNewDate(data.today);
+      setDeferDate(addDays(data.today, 7));
       setDirty(false);
     } catch (err) {
       if (err instanceof Error && err.message === '联系人不存在') {
@@ -101,6 +106,19 @@ export function ContactDetailPage({ id, onToast }: { id: string; onToast: Notify
       onToast(err instanceof Error ? err.message : '记录失败');
     } finally {
       setRecording(false);
+    }
+  };
+
+  const setDefer = async (date: string | null): Promise<void> => {
+    setSavingDefer(true);
+    try {
+      await updateContact(contact.id, { deferredUntil: date });
+      onToast(date === null ? '已取消延后' : '已延后,到期自动回归');
+      await load();
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : '操作失败');
+    } finally {
+      setSavingDefer(false);
     }
   };
 
@@ -198,6 +216,33 @@ export function ContactDetailPage({ id, onToast }: { id: string; onToast: Notify
             ))}
           </select>
         </label>
+      </section>
+
+      <section className="card">
+        <h2 className="card-title">延后</h2>
+        <div className="defer-row">
+          <input type="date" value={deferDate} onChange={(event) => setDeferDate(event.target.value)} />
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={deferDate === '' || savingDefer}
+            onClick={() => void setDefer(deferDate)}
+          >
+            {evaluation.isDeferred ? '改期到这' : '延后到这天'}
+          </button>
+          {evaluation.isDeferred && (
+            <button type="button" className="btn-ghost" disabled={savingDefer} onClick={() => void setDefer(null)}>
+              取消延后
+            </button>
+          )}
+        </div>
+        {evaluation.isDeferred ? (
+          <p className="list-note">
+            延后中:期间不出现在本周清单,将在 {evaluation.contact.deferredUntil} 自动回归。
+          </p>
+        ) : (
+          <p className="list-note">延后期间 TA 不出现在本周清单,到这天自动回来。</p>
+        )}
       </section>
 
       <section className="card">

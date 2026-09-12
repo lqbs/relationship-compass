@@ -151,6 +151,16 @@ describe('buildWeeklyList 生成本周清单', () => {
     const list = buildWeeklyList([makeContact('a', { deferredUntil: addDays(TODAY, 10) })], [], TODAY);
     expect(list.listCount).toBe(0);
   });
+
+  it('延后到期后自动回归清单(按正常规则分类)', () => {
+    const list = buildWeeklyList(
+      [makeContact('a', { cadenceKey: '1m', deferredUntil: daysAgo(1) })],
+      [makeInteraction('a', daysAgo(40))],
+      TODAY,
+    );
+    expect(list.overdue.map((entry) => entry.contact.id)).toEqual(['a']);
+    expect(list.listCount).toBe(1);
+  });
 });
 
 describe('describeReason 生成上榜依据文案', () => {

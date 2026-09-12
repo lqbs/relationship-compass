@@ -615,3 +615,25 @@ body {
   background: #f3f4f6;
   color: var(--text-muted);
 }
+
+.defer-row {
+  display: flex;
+  gap: 8px;
+}
+
+.defer-row input {
+  flex: none;
+  width: 160px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 14px;
+  background: #fbfbfc;
+}
+
+.defer-row input:focus {
+  outline: 2px solid rgba(79, 70, 229, 0.35);
+  outline-offset: 1px;
+  background: #ffffff;
+}
