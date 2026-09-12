@@ -69,3 +69,7 @@ export function deleteContact(id: string): Promise<void> {
 export function deleteInteraction(id: string): Promise<void> {
   return request<void>(`/api/interactions/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
+
+export function clearSampleData(): Promise<{ removed: number }> {
+  return request<{ removed: number }>('/api/sample/clear', { method: 'POST' });
+}

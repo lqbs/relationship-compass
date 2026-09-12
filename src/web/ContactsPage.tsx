@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { describeReason, type ContactEvaluation } from '../domain/judgment.ts';
 import { CADENCE_KEYS, CADENCE_PRESETS, type CadenceKey } from '../domain/types.ts';
-import { createContact, fetchContacts } from './api.ts';
+import { clearSampleData, createContact, fetchContacts } from './api.ts';
 import { Avatar, StatusBadge } from './components.tsx';
 
 type Notify = (message: string) => void;
@@ -37,6 +37,8 @@ export function ContactsPage({ onToast }: { onToast: Notify }) {
   const [note, setNote] = useState('');
   const [cadenceKey, setCadenceKey] = useState<CadenceKey>('1m');
   const [saving, setSaving] = useState(false);
+  const [confirmingClear, setConfirmingClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -71,6 +73,22 @@ export function ContactsPage({ onToast }: { onToast: Notify }) {
     }
   };
 
+  const clearSamples = async (): Promise<void> => {
+    setClearing(true);
+    try {
+      const result = await clearSampleData();
+      setConfirmingClear(false);
+      onToast(`已清空 ${result.removed} 位示例联系人`);
+      await load();
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : '清空失败');
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const hasSamples = contacts?.some((entry) => entry.contact.isSample) ?? false;
+
   return (
     <>
       <div className="page-head">
@@ -78,12 +96,32 @@ export function ContactsPage({ onToast }: { onToast: Notify }) {
         <p className="subtitle">共 {contacts?.length ?? 0} 人 · 你正在维护的名单</p>
       </div>
 
-      {!adding && (
-        <div className="toolbar">
+      <div className="toolbar">
+        {!adding && !confirmingClear && (
           <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
             ＋ 新增联系人
           </button>
-        </div>
+        )}
+        {!adding && hasSamples && !confirmingClear && (
+          <button type="button" className="btn-ghost" onClick={() => setConfirmingClear(true)}>
+            清空示例数据
+          </button>
+        )}
+        {confirmingClear && (
+          <span className="confirm-row">
+            <span>将删除全部示例联系人及其互动(你自己添加的人不受影响)。</span>
+            <button type="button" className="btn-danger" disabled={clearing} onClick={() => void clearSamples()}>
+              {clearing ? '清空中…' : '确认清空'}
+            </button>
+            <button type="button" className="btn-ghost" onClick={() => setConfirmingClear(false)}>
+              取消
+            </button>
+          </span>
+        )}
+      </div>
+
+      {hasSamples && !confirmingClear && (
+        <p className="list-note samples-note">当前是示例数据:清空后即可开始录入你自己的联系人。</p>
       )}
 
       {adding && (
